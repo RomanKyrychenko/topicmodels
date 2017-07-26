@@ -19,17 +19,25 @@ library(tm)
 library(tidyverse)
 
 tem <- readxl::read_excel("digest_test_R.xlsx",sheet = 2)
-tem$Описание <- paste(tem$`Заголовок без знаков препинания`,tem$Описание,collapse=" ")
-tem$Описание <- gsub(">[^<^>]+<", "> <", tem$Описание) # remove all the text in between HTML tags, leaving only HTML tags (opening and closing)
+object.size(tem$`Заголовок без знаков препинания`)
+object.size(tem$Описание)
+object.size(paste(tem$`Заголовок без знаков препинания`,tem$Описание,collapse=" "))
+#tem$Описание <- paste(tem$`Заголовок без знаков препинания`,tem$Описание,collapse=" ")
+tem$Описание <- tolower(gsub(">[^<^>]+<", "> <", tem$Описание)) # remove all the text in between HTML tags, leaving only HTML tags (opening and closing)
 tem$Описание <- gsub("</[^<^>]+>", "", tem$Описание)
-paperCorp <- Corpus(VectorSource(tem$Описание))
+tem$`Заголовок без знаков препинания` <- tolower(gsub(">[^<^>]+<", "> <", tem$`Заголовок без знаков препинания`)) # remove all the text in between HTML tags, leaving only HTML tags (opening and closing)
+tem$`Заголовок без знаков препинания` <- gsub("</[^<^>]+>", "", tem$`Заголовок без знаков препинания`)
+tem$bigtext <- mapply(function(x,y) paste(x,y,collapse=" "),tem$`Заголовок без знаков препинания`,tem$Описание)
+
+paperCorp <- Corpus(VectorSource(tem$bigtext))
+#paperCorp <- Corpus(VectorSource(tem$Описание))
 paperCorp <- tm_map(paperCorp, removePunctuation)
 paperCorp <- tm_map(paperCorp, removeNumbers)
 # added tolower
-paperCorp <- tm_map(paperCorp, tolower)
+#paperCorp <- tm_map(paperCorp, tolower)
 paperCorp <- tm_map(paperCorp, removeWords, stopwords("english"))
 paperCorp <- tm_map(paperCorp, removeWords, stopwords("russian"))
-paperCorp <- tm_map(paperCorp, removeWords, stopwords("ukrainian"))
+paperCorp <- tm_map(paperCorp, removeWords, stopwords)
 # moved stripWhitespace
 
 
@@ -51,7 +59,7 @@ rowTotals <- apply(dtm , 1, sum) #Find the sum of words in each Document
 dtm.new   <- dtm[rowTotals> 0, ]  
 
 control <- list(burnin = 500, iter = 1000, keep = 100, seed = 2500)
-(k <- optimal_k(dtm.new, 40, control = control))
+#(k <- optimal_k(dtm.new, 40, control = control))
 
 k <- 200 # set number of topics
 # generate model
@@ -62,7 +70,7 @@ names(gammaDF) <- c(1:k)
 toptopics <- as.data.frame(cbind(document = row.names(gammaDF), 
                                  topic = apply(gammaDF,1,function(x) names(gammaDF)[which(x==max(x))])))
 toptext <- data_frame(text=tem$Заголовок[rowTotals> 0] ,topic=toptopics$topic)
-
+toptext$topic <- sapply(toptext$topic, paste0, collapse=" ")
 
 topicmodels2LDAvis <- function(x, ...){
   post <- topicmodels::posterior(x)
