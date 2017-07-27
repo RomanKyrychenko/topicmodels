@@ -25,7 +25,27 @@ stopwords = c("div", "href", "rel", "com", "relnofollow", "про", "что",
               "centerspan", "size", "stylefont-s", "font-siz", "divfont", 
               "justifi", "center", "width", "height", "classfeed-descriptionp",
               "pimg", "wp-post-imag", "margin", "sizesmax-width","justifystrong", 
-              "srchttpimageunncomuaoriginaljpg", "altновости", "centerimg")
+              "srchttpimageunncomuaoriginaljpg", "altновости", "centerimg",
+              "styletextalign","stylefontsize","justify","fontsize","padding","helvetica",
+              "laquoР","raquo","httpnovostimiracomnewshtml","hrefhttprkrinuauploadspostsmatigeroyinyajpg",
+              "hrefhttpskeletinfoorg","pem","leaders","hstrong","development","religious","targetblankstrong",
+              "che","glucosio","person","primarily","hrefhttpskeletinfoorg","classmetanav","clearall",
+              "stylefontfamily","arial","fontfamily","outline","sansserif","textalign","border","inherit","left","pspan",         
+              "justifyspan","rgb","styleboxsizing","small","googleadsectionend",
+              "classfielditem","classfielditemsdiv","fieldlabelhiddendiv",                       
+              "fieldnamebody","fieldtypetextwithsummary","title","datatype","fieldtypeimage","typeoffoafimage",               
+              "classcolorbox","fieldnamefieldimage","fieldtypetaxonomytermreference","rdfsseealso","relogimage","evenidfirstp",
+              "sizesmaxwidth","wppostimage","sizedecosingle","styledisplayblock","classattachmentdecosingle","hrefhttpspolitekanet",                                 
+              "httpspolitekanetwpcontentuploadsefebimagexjpeg","httpspolitekanetwpcontentuploadsgettyimageskopiyaxjpg",
+              "httpspolitekanetwpcontentuploadsunianxjpg","httpspolitekanetwpcontentuploadsgettyimagesxjpg",
+              "classfielditems","odd", "classfielditem","fieldtypetext","stylewidth","classimage","classimageattachteaser","imageattachnode",              
+              "medium","tahomaarialhelveticasansserif","imagethumbnail","classimagecache","pxa", "fieldfieldnewslead","fieldfieldyandexnews",
+              "srchttpinmediakitemscachedddddbbecbesjpg","srchttpsgoroddpuapicnewsnewsimagesmjpg","srchttpwwwkanzasuauploadpicresizejpg",
+              "ampraquo","hrefhttpelvisticomnode","hrefhttpwwwgazetamistoteualajntranslyatsiyaforumudetsentralizatsiyaosnovaformuvannyanovoyisystemyupravlinnyatamistsevogorozvytku",
+              "forklog","hidden","hrefhttpgiuauseridurlhttpsaffnewstutbyfeconomicsfhtml","lineheight","overflow","colorspan", "pxbbrspan","sizeb",
+              "srcbmimgcomuaacommonimgicstarsemptyvioletgif","altimg","titleСЂР","hrefhttpvideobigmirnetuser","srchttpbmimgcomuavideoimgsxjpg", "table",
+              "mediumspan","sansarialsansserifspan","langruruspan","classfooterinfosocialitemfollows","classfooterinfosocialitemiconspan",
+              "hrefhttpwwwpravdacomuarusnews", "classfbcommentscount","що","который","которые","также","таким","новости","несмотря")
 
 tem$bigtext <- mapply(function(x,y) paste(x,y,collapse=" "),tem$`Заголовок без знаков препинания`,tem$Описание)
 processed <- textProcessor(tem$bigtext, metadata = tem,customstopwords =stopwords)
