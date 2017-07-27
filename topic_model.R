@@ -71,18 +71,3 @@ toptopics <- as.data.frame(cbind(document = row.names(gammaDF),
                                  topic = apply(gammaDF,1,function(x) names(gammaDF)[which(x==max(x))])))
 toptext <- data_frame(text=tem$Заголовок[rowTotals> 0] ,topic=toptopics$topic)
 toptext$topic <- sapply(toptext$topic, paste0, collapse=" ")
-
-topicmodels2LDAvis <- function(x, ...){
-  post <- topicmodels::posterior(x)
-  if (ncol(post[["topics"]]) < 3) stop("The model must contain > 2 topics")
-  mat <- x@wordassignments
-  LDAvis::createJSON(
-    phi = post[["terms"]], 
-    theta = post[["topics"]],
-    vocab = colnames(post[["terms"]]),
-    doc.length = slam::row_sums(mat, na.rm = TRUE),
-    term.frequency = slam::col_sums(mat, na.rm = TRUE)
-  )
-}
-
-lda %>% topicmodels2LDAvis() %>% LDAvis::serVis()
