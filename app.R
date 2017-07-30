@@ -3,15 +3,11 @@ library(stringr)
 library(topicmodels)
 library(tm)
 library(dplyr)
-#library(XLConnect)
-
 library(shinydashboard)
-#Sys.setlocale("LC_ALL","Ukrainian")
 
 scanner <- function(x) strsplit(x," ")
 
-
-stopwords = c("div", "href", "rel", "com", "relnofollow", "про", "что",
+stopwords = unique(c("div", "href", "rel", "com", "relnofollow", "про", "что",
               "для", "relnofollow", "alt", "zero","img", "alignleft", "hspace", "vspace",
               "alignleft", "hspace", "vspace", "pbrp","altновини", "hrefhttpgsfmopinionhtml", "mode","strong", "pstrong", "targetblank",
               "styletext-align", "justifi","altнапк", "classattachment-decosingl", "classreadmor", 
@@ -57,8 +53,19 @@ stopwords = c("div", "href", "rel", "com", "relnofollow", "про", "что",
               "forklog","hidden","hrefhttpgiuauseridurlhttpsaffnewstutbyfeconomicsfhtml","lineheight","overflow","colorspan", "pxbbrspan","sizeb",
               "srcbmimgcomuaacommonimgicstarsemptyvioletgif","altimg","titleСЂР","hrefhttpvideobigmirnetuser","srchttpbmimgcomuavideoimgsxjpg", "table",
               "mediumspan","sansarialsansserifspan","langruruspan","classfooterinfosocialitemfollows","classfooterinfosocialitemiconspan",
-              "hrefhttpwwwpravdacomuarusnews", "classfbcommentscount","що","который","которые","также","таким","новости","несмотря")
-
+              "hrefhttpwwwpravdacomuarusnews", "classfbcommentscount","що","который","которые","также","таким","новости","несмотря","в","на","и","не",
+              "что","у","о","по","с","про","за","з","до","і","що","экс","об","этом","из","к","от","та","для","екс","це","его","а","как","politeka","он",
+              "від","його","новости","это","твій","года","суті","при","під","после","того","через","будет","так","липня","том","уже","більше","як","все",
+              "но","щодо","які","которые","то","2017","против","также","далее","новостей","він","своей","також","еще","перед","который","є","под","сути",
+              "твой","знай","михаил","со","году","року","я","видео","проти","сил","із","сейчас","чтобы","dneprcity.net","же","й","может","над","или",
+              "стало","было","може","тому","буде","те","был","быть","между","фото","112","який","ua","только","чем","является","ли","более","21",
+              "26.07.17","без","було","вже","где","зі","ще","19","2018","laquo","мы","raquo","вона","кто","ми","своїй","ст","яких","были","ему","их",
+              "наших","него","особо","очень","себе","щоб","де","ее","зараз","котором","сам","своем","теперь","цього","але","если","которая","себя",
+              "тем","эти","https","больше","був","бути","два","навіщо","нас","таки","тогда","replyua.net","будут","йому","між","можно","ним","новость",
+              "п","ч","чи","12","50","mc","должен","им","именно","источник","которых","меньше","стал","эту","буду","має","стоит","требует","этот","11",
+              "http","была","высокий","день","имеет","її","мог","несколько","них","она","этого","вони","всего","вся","когда","которым","одним","почти",
+              "разі","стала","була","всі","вы","даже","дал","дать","кого","которое","м","нет","ни","новину","оборони","один","поки","потому","свою",
+              "стали","таким","этой","яка","якому","яку","script","the","var","ей","новини","одно","понад","проте","серед","такий","чому","вот","дати","есть"))
 
 ui <- dashboardPage(skin = "blue",
                     title="Corestone ML",
@@ -139,13 +146,13 @@ server <- function(input,output,server,session){
     
     progress$set(message = 'Calculation in progress',
                  detail = 'This may take a while...')
-    #tem <- readxl::read_excel("digest_test_R.xlsx",sheet = 2)
+    #tem <- readxl::read_excel("Cover_All_DB.xlsm_20170726.xlsm",sheet = 3)
     tem$Описание <- tolower(gsub(">[^<^>]+<", "> <", tem$Описание)) # remove all the text in between HTML tags, leaving only HTML tags (opening and closing)
     tem$Описание <- gsub("</[^<^>]+>", "", tem$Описание)
-    tem$`Заголовок без знаков препинания` <- tolower(gsub(">[^<^>]+<", "> <", tem$`Заголовок без знаков препинания`)) # remove all the text in between HTML tags, leaving only HTML tags (opening and closing)
-    tem$`Заголовок без знаков препинания` <- gsub("</[^<^>]+>", "", tem$`Заголовок без знаков препинания`)
+    tem$`Заголовок без знаков препинания` <- tolower(gsub(">[^<^>]+<", "> <", tem$Язык)) # remove all the text in between HTML tags, leaving only HTML tags (opening and closing)
+    tem$`Заголовок без знаков препинания` <- gsub("</[^<^>]+>", "", tem$Язык)
     progress$set(value = 1, detail="Видалено зайві символи")
-    tem$bigtext <- enc2utf8(mapply(function(x,y) paste(x,y,collapse=" "),tem$`Заголовок без знаков препинания`,tem$Описание))
+    tem$bigtext <- enc2utf8(mapply(function(x,y) paste(x,y,collapse=" "),tem$Язык,tem$Описание))
     progress$set(value = 2, detail="Створено один текст і заголовків та описів")
     paperCorp <- Corpus(VectorSource(enc2native(tem$bigtext)),readerControl = list(language = "ru"))
     progress$set(value = 3, detail="Створено корпус документів")
@@ -177,9 +184,10 @@ server <- function(input,output,server,session){
     gammaDF <- as.data.frame(lda@gamma) 
     names(gammaDF) <- c(1:k)
     toptopics <- as.data.frame(cbind(document = row.names(gammaDF), 
-                                     topic = apply(gammaDF,1,function(x) names(gammaDF)[which(x==max(x))])))
-    toptext <- data_frame(text=tem$Заголовок[rowTotals> 0] ,topic=toptopics$topic)
-    toptext$topic <- sapply(toptext$topic, paste0, collapse=" ")
+                                     topic = as.numeric(apply(gammaDF,1,function(x) names(gammaDF)[which(x==max(x))][1]))))
+    toptext <- data_frame(text=tem$Заголовок[rowTotals> 0] ,Тема2=toptopics$topic)
+    #toptext$Тема <- sapply(toptext$Тема, paste0, collapse=" ")
+    toptext$`Рівень відповідності` <- apply(gammaDF,1,max)
     #toptext$topic <- ldaOut.topics[,1]
     tem <- left_join(tem,toptext,by=c("Заголовок"="text"))
     progress$set(value = 20, detail="Масив створено, сторення Excel")
@@ -187,9 +195,11 @@ server <- function(input,output,server,session){
   })
   
   output$down <- downloadHandler(
-    filename = function() { paste0("Topics_",input$cluster,"_",as.character(Sys.Date()), '.csv') },
+    filename = function() {paste0("Topics_",input$cluster,"_",as.character(Sys.Date()), '.xlsx')},
     content = function(file) {
-      write.csv(df()[-37], file)
+      #xlsx::write.xlsx(df()[-37], file)
+      xlsx::write.xlsx2(df()[-37], file, sheetName = "Теми", row.names = FALSE)
+      xlsx::write.xlsx2(df()[38], file, sheetName = "Оцінка тем", row.names = FALSE, append = TRUE)
     }
   )}
 
