@@ -1,0 +1,170 @@
+library(stringr)
+library(topicmodels)
+library(tm)
+library(dplyr)
+library(elastic)
+
+scanner <- function(x) strsplit(x," ")
+
+stopwords = unique(c("div", "href", "rel", "com", "relnofollow", "про", "что",
+                     "для", "relnofollow", "alt", "zero","img", "alignleft", "hspace", "vspace",
+                     "alignleft", "hspace", "vspace", "pbrp","altновини", "hrefhttpgsfmopinionhtml", "mode","strong", "pstrong", "targetblank",
+                     "styletext-align", "justifi","altнапк", "classattachment-decosingl", "classreadmor", 
+                     "ethereum", "hrefhttpresonanceua", "hrefhttpsinforesistorg",
+                     "hrefhttpblogiuaus", "hrefhttpvycherpnockua", "hrefhttpwwwkmugovuacontrolukpublisharticleartidampcatid", 
+                     "noneimg", "solid", "start", "stylefont-s", "stylefloat", "classfield-item", 
+                     "classfield", "classfield-itemsdiv", "field-label-hiddendiv", "hrefhttpwwwaddthiscombookmarkphpv",
+                     "srcbmimgcomuaberlinstoragefinancexebfcbeadfdeccjpg",
+                     "eff", "i","classfield-item", "classfield", "classfield-itemsdiv", "field-label-hiddendiv", "datatyp", 
+                     "propertyrdfslabel", "datatyp", "propertyrdfslabel", "skospreflabel", "typeofskosconcept", 
+                     "reldcsubjecta", "classfield-tag", "field-type-taxonomy-term-refer", 
+                     "classimagecach", "classlink", "classrtejustifyspan", "classtranslation-link", "classtranslationru", 
+                     "clearfixdiv", "data-colorbox-gallerygallery-node--ytzaljghei", 
+                     "propertyrdfslabel", "skospreflabel","этом","это","які","від","datatyp","-tag",
+                     "hrefhttpkorupciyacom", "дуже", "там", "так", "але","span", "width", "classleftimgimg", "stylecolor", "stylefont-famili",
+                     "hspace", "vspace", "clearal","classback-block","tabletrtd", "valigntop",
+                     "hrefhttpwwwaddthiscombookmarkphpv", "even", "как", "titl",
+                     "sea", "black", "hold", "one","stylemargin", "color", "outlin", "pad", "none","nbsp",
+                     "centerspan", "size", "stylefont-s", "font-siz", "divfont", 
+                     "justifi", "center", "width", "height", "classfeed-descriptionp",
+                     "pimg", "wp-post-imag", "margin", "sizesmax-width","justifystrong", 
+                     "srchttpimageunncomuaoriginaljpg", "altновости", "centerimg","styletextalign","stylefontsize","justify","fontsize","padding",
+                     "helvetica","laquoР","raquo","httpnovostimiracomnewshtml","hrefhttprkrinuauploadspostsmatigeroyinyajpg",
+                     "hrefhttpskeletinfoorg","pem","leaders","hstrong","development","religious","targetblankstrong",
+                     "che","glucosio","person","primarily","hrefhttpskeletinfoorg","classmetanav","clearall",
+                     "stylefontfamily","arial","fontfamily","outline","sansserif","textalign","border","inherit","left","pspan",         
+                     "justifyspan","rgb","styleboxsizing","small","googleadsectionend",
+                     "classfielditem","classfielditemsdiv","fieldlabelhiddendiv", "also", "article", "Article", 
+                     "download", "google", "figure","fig", "groups","Google", "however","high", "human", "levels","alt","feed","image","src","http",
+                     "jpg", "larger", "may", "number","class","новости",
+                     "shown", "study", "studies", "this","img","using", "two", "the", "Scholar","pubmedncbi", "PubMedNCBI","p","photocharles",
+                     "view", "View", "the", "biol","div","via", "image", "doi", "one", "classbackblock",
+                     "analysis","nbspap","photocharl","dharapak","pimg", "srcbmimgcomuaberlinstoragenewsxabddbdbajpg", "alignleft", "nbspnbspnbsp", "href",                      
+                     "fieldnamebody","fieldtypetextwithsummary","title","datatype","fieldtypeimage","typeoffoafimage",               
+                     "classcolorbox","fieldnamefieldimage","fieldtypetaxonomytermreference","rdfsseealso","relogimage","evenidfirstp",
+                     "sizesmaxwidth","wppostimage","sizedecosingle","styledisplayblock","classattachmentdecosingle","hrefhttpspolitekanet",                                 
+                     "httpspolitekanetwpcontentuploadsefebimagexjpeg","httpspolitekanetwpcontentuploadsgettyimageskopiyaxjpg",
+                     "httpspolitekanetwpcontentuploadsunianxjpg","httpspolitekanetwpcontentuploadsgettyimagesxjpg",
+                     "classfielditems","odd", "classfielditem","fieldtypetext","stylewidth","classimage","classimageattachteaser","imageattachnode",              
+                     "medium","tahomaarialhelveticasansserif","imagethumbnail","classimagecache","pxa", "fieldfieldnewslead","fieldfieldyandexnews",
+                     "srchttpinmediakitemscachedddddbbecbesjpg","srchttpsgoroddpuapicnewsnewsimagesmjpg","srchttpwwwkanzasuauploadpicresizejpg",
+                     "ampraquo","hrefhttpelvisticomnode","hrefhttpwwwgazetamistoteualajntranslyatsiyaforumudetsentralizatsiyaosnovaformuvannyanovoyisystemyupravlinnyatamistsevogorozvytku",
+                     "forklog","hidden","hrefhttpgiuauseridurlhttpsaffnewstutbyfeconomicsfhtml","lineheight","overflow","colorspan", "pxbbrspan","sizeb",
+                     "srcbmimgcomuaacommonimgicstarsemptyvioletgif","altimg","titleСЂР","hrefhttpvideobigmirnetuser","srchttpbmimgcomuavideoimgsxjpg", "table",
+                     "mediumspan","sansarialsansserifspan","langruruspan","classfooterinfosocialitemfollows","classfooterinfosocialitemiconspan",
+                     "hrefhttpwwwpravdacomuarusnews", "classfbcommentscount","що","который","которые","также","таким","новости","несмотря","в","на","и","не",
+                     "что","у","о","по","с","про","за","з","до","і","що","экс","об","этом","из","к","от","та","для","екс","це","его","а","как","politeka","он",
+                     "від","його","новости","это","твій","года","суті","при","під","после","того","через","будет","так","липня","том","уже","більше","як","все",
+                     "но","щодо","які","которые","то","2017","против","также","далее","новостей","він","своей","також","еще","перед","который","є","под","сути",
+                     "твой","знай","михаил","со","году","року","я","видео","проти","сил","із","сейчас","чтобы","dneprcity.net","же","й","может","над","или",
+                     "стало","было","може","тому","буде","те","был","быть","между","фото","112","який","ua","только","чем","является","ли","более","21",
+                     "26.07.17","без","було","вже","где","зі","ще","19","2018","laquo","мы","raquo","вона","кто","ми","своїй","ст","яких","были","ему","их",
+                     "наших","него","особо","очень","себе","щоб","де","ее","зараз","котором","сам","своем","теперь","цього","але","если","которая","себя",
+                     "тем","эти","https","больше","був","бути","два","навіщо","нас","таки","тогда","replyua.net","будут","йому","між","можно","ним","новость",
+                     "п","ч","чи","12","50","mc","должен","им","именно","источник","которых","меньше","стал","эту","буду","має","стоит","требует","этот","11",
+                     "http","была","высокий","день","имеет","її","мог","несколько","них","она","этого","вони","всего","вся","когда","которым","одним","почти",
+                     "разі","стала","була","всі","вы","даже","дал","дать","кого","которое","м","нет","ни","новину","оборони","один","поки","потому","свою",
+                     "стали","таким","этой","яка","якому","яку","script","the","var","ей","новини","одно","понад","проте","серед","такий","чому","вот","дати","есть"))
+
+q = '{
+  "query": {
+    "bool": {
+      "must": [
+          {
+            "exists": {
+            "field": "title_ru"
+            }
+          },
+          {
+            "exists": {
+            "field": "target"
+          }
+          }
+       ]
+    }
+  }
+}'
+
+print(paste("Start connection",Sys.time()))
+
+connect(es_host = "13.59.27.188", es_port = 9200)
+
+print(paste("Start download",Sys.time()))
+
+res <- Search(index = "urls_20170802", body=q , type = 'news',source = paste("title_ru","descr",sep = ","),scroll = "1m")
+out <- res$hits$hits
+hits <- 1
+while(hits != 0){
+  res <- scroll(scroll_id = res$`_scroll_id`)
+  hits <- length(res$hits$hits)
+  if(hits > 0)
+    out <- c(out, res$hits$hits)
+}
+
+library(gtools)
+out_df <- do.call("smartbind",lapply(out,function(x)as.data.frame(x,stringsAsFactors=F)))
+
+print(paste("Downloaded",Sys.time()))
+
+train_lda <- function(tem,k){
+  #tem$X_source.descr <- tolower(gsub(">[^<^>]+<", "> <", tem$X_source.descr)) 
+  #tem$X_source.descr <- gsub("</[^<^>]+>", "", tem$X_source.descr)
+  tem$X_source.descr <- enc2utf8(mapply(function(x,y) paste(x,y,collapse=" "),tem$X_source.title_ru,tem$X_source.descr))
+  paperCorp <- Corpus(VectorSource(enc2native(tem$X_source.descr)),readerControl = list(language = "ru"))
+  paperCorp <- tm_map(paperCorp, removePunctuation)
+  paperCorp <- tm_map(paperCorp, removeNumbers)
+  paperCorp <- tm_map(paperCorp, removeWords, stopwords("english"))
+  paperCorp <- tm_map(paperCorp, removeWords, stopwords("russian"))
+  paperCorp <- tm_map(paperCorp, removeWords, stopwords)
+  paperCorp <- tm_map(paperCorp, stemDocument,language="russian")
+  paperCorp <- tm_map(paperCorp, stripWhitespace)
+  paperCorp <- tm_map(paperCorp, stringi::stri_trans_general,"Ukrainian-Latin/BGN")
+  dtm <- DocumentTermMatrix(paperCorp,control=list(tokenize=scanner,wordLengths=c(3, 15)))
+  rowTotals <- apply(dtm , 1, sum) 
+  dtm.new   <- dtm[rowTotals> 0, ]  
+  control <- list(burnin = 2500,
+                  iter = 5000,
+                  seed = 0:4,
+                  nstart = 5,
+                  best = TRUE)
+  lda <- LDA(dtm.new, k, method = "Gibbs", control = control)
+  gammaDF <- as.data.frame(lda@gamma) 
+  names(gammaDF) <- c(1:k)
+  toptopics <- as.data.frame(cbind(document = row.names(gammaDF), 
+                                   theme = as.numeric(apply(gammaDF,1,function(x) names(gammaDF)[which(x==max(x))][1]))),stringsAsFactors=F)
+  toptext <- data_frame(text=tem$X_source.title_ru[rowTotals> 0] ,theme=toptopics$theme)
+  toptext$theme_quality <- apply(gammaDF,1,max)
+  toptext <- toptext %>% group_by(text) %>% summarise(theme=min(theme,na.rm=T),theme_quality=mean(theme_quality,na.rm=T))
+  tem <- left_join(tem,toptext,by=c("X_source.title_ru"="text"))
+  slov <- left_join((tem %>% group_by(theme) %>% summarise(theme_quality=max(theme_quality)[1])),tem[c(5:9)],by=c("theme_quality","theme"))
+  names(slov)[3] <- "theme2"
+  tem <- left_join(tem,slov[-2],by=c("theme"))
+  tem$theme <- tem$theme2
+  tem <- distinct(tem[-c(7,10:12)])
+  tem[!duplicated(tem[,'X_id']),]
+}
+
+print(paste("Start training",Sys.time()))
+
+out_df2 <- train_lda(out_df,2000)
+
+print(paste("Trained",Sys.time()))
+
+names(out_df2) <- c("_index","_type","_id","_score","title_ru","descr_ru","theme","theme_quality")
+
+
+
+out_df2 <- na.omit(out_df2)
+
+print(paste("Start writing",Sys.time()))
+
+con<-file("OU20170802upd.json",open = 'a',encoding="UTF-8")
+for(i in 1:nrow(out_df2)){
+  write(print(paste0('{"update": {"_id": "',out_df2[i,3],'", "_type" : "news", "_index" : "',
+                out_df2[i,1],'"}}\n{"doc": {"theme": "',str_replace_all(gsub("|","",str_replace_all(out_df2[i,7], "[[:punct:]]", "")), "[\r\n]" , ""),'", "theme_quality": ',as.numeric(out_df2[i,8]),'}}')),file=con,
+         append=TRUE)
+}
+print(paste("Start bulking",Sys.time()))
+
+res <- docs_bulk("OU20170802upd.json")
+print(paste("Bulked!",Sys.time()))
