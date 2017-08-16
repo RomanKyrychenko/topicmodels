@@ -1,9 +1,10 @@
-#Sys.sleep(10800)
+Sys.sleep(21000)
 library(stringr)
 library(topicmodels)
 library(tm)
 library(dplyr)
 library(elastic)
+library(RCurl)
 
 scanner <- function(x) strsplit(x," ")
 
@@ -86,9 +87,18 @@ q = '{
 }
 }'
 
+csv_to_json <- function(dat, pretty = F,na = "null",raw = "mongo",digits = 3,force = "unclass")
+{
+  dat_to_json <- jsonlite::toJSON(dat,pretty = pretty,na = "null",raw = raw,digits = digits ,force = force )
+  dat_to_json=substr(dat_to_json,start = 2,nchar(dat_to_json)-1) 
+  return(dat_to_json)
+}
+
 print(paste("Start connection",Sys.time()))
 
 connect(es_host = "13.59.27.188", es_port = 9200)
+
+es <- "13.59.27.188:9200"
 
 print(paste("Start download",Sys.time()))
 
@@ -111,13 +121,14 @@ train_lda <- function(tem,k){
   #tem$X_source.descr <- tolower(gsub(">[^<^>]+<", "> <", tem$X_source.descr))
   #tem$X_source.descr <- gsub("</[^<^>]+>", "", tem$X_source.descr)
   #tem$X_source.fullhtml <- enc2utf8(mapply(function(x,y) paste(x,y,collapse=" "),tem$X_source.title_ru,tem$X_source.fullhtml))
-  paperCorp <- Corpus(VectorSource(tolower(tem$X_source.fullhtml)),readerControl = list(language = "ru"))
+  paperCorp <- Corpus(VectorSource(tem$X_source.fullhtml),readerControl = list(language = "ru"))
   paperCorp <- tm_map(paperCorp, removePunctuation)
   paperCorp <- tm_map(paperCorp, removeNumbers)
+  paperCorp <- tm_map(paperCorp,tolower)
   paperCorp <- tm_map(paperCorp, removeWords, stopwords("english"))
   paperCorp <- tm_map(paperCorp, removeWords, stopwords("russian"))
   paperCorp <- tm_map(paperCorp, removeWords, stopwords)
-  paperCorp <- tm_map(paperCorp, removeWords, tolower(unique(dom$Domain)))
+  #paperCorp <- tm_map(paperCorp, removeWords, tolower(unique(dom$Domain)))
   #paperCorp <- tm_map(paperCorp, removeWords, tolower(unique(dom$Источник)))
   paperCorp <- tm_map(paperCorp, stemDocument,language="russian")
   paperCorp <- tm_map(paperCorp, stripWhitespace)
@@ -126,8 +137,8 @@ train_lda <- function(tem,k){
   dtm<-removeSparseTerms(dtm, sparse=0.99)
   rowTotals <- apply(dtm , 1, sum)
   dtm.new   <<- dtm[rowTotals> 0, ]
-  control <- list(burnin = 90,
-                  iter = 90,
+  control <- list(burnin = 150,
+                  iter = 150,
                   #seed = 0:4,
                   #nstart = 5,
                   best = TRUE)
@@ -151,7 +162,11 @@ train_lda <- function(tem,k){
 
 print(paste("Start training",Sys.time()))
 
-out_df2 <- train_lda(out_df,1000)
+try(httpPUT(paste(es, paste0("urls_",gsub("-","",as.character(Sys.Date()-1))),"news","theme",sep="/"), csv_to_json(data.frame(dt=paste0(substr(as.character(Sys.time()),1,10),"T",substr(as.character(Sys.time()),12,20),"+0300")))))
+
+startdate=paste0(substr(as.character(Sys.time()),1,10),"T",substr(as.character(Sys.time()),12,20),"+0300")
+
+out_df2 <- train_lda(out_df,2000)
 
 print(paste("Trained",Sys.time()))
 
@@ -165,10 +180,17 @@ con<-file(paste0("OU",gsub("-","",as.character(Sys.Date()-1)),".json"),open = 'a
 for(i in 1:nrow(out_df2)){
   write(print(paste0('{"update": {"_id": "',out_df2[i,3],'", "_type" : "news", "_index" : "',
                      out_df2[i,1],'"}}\n{"doc": {"theme": "',str_replace_all(gsub("|","",
-        str_replace_all(out_df2[i,7], "[[:punct:]]", "")), "[\r\n]" , ""),'", "theme_quality": ',as.numeric(out_df2[i,8]),'}}')),file=con,
+                                                                                  str_replace_all(out_df2[i,7], "[[:punct:]]", "")), "[\r\n]" , ""),'", "theme_quality": ',as.numeric(out_df2[i,8]),'}}')),file=con,
         append=TRUE)
 }
 print(paste("Start bulking",Sys.time()))
 
-res <- docs_bulk(paste0("OU",gsub("-","",as.character(Sys.Date()-1)),".json"))
+Sys.sleep(100)
+res <- tryCatch(docs_bulk(paste0("OU",gsub("-","",as.character(Sys.Date()-1)),".json")))
+httpPUT(paste(es, paste0("urls_",gsub("-","",as.character(Sys.Date()-1))),"news","theme",sep="/"), csv_to_json(data.frame(dt=startdate,
+                                                                                                                          dtpost=paste0(substr(as.character(Sys.time()),1,10),"T",substr(as.character(Sys.time()),12,20),"+0300"))))
 print(paste("Bulked!",Sys.time()))
+
+Sys.sleep(100)
+
+res <- tryCatch(docs_bulk(paste0("OU",gsub("-","",as.character(Sys.Date()-1)),".json")))
